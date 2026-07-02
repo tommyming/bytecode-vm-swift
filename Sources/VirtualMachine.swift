@@ -1,3 +1,5 @@
+// Tommy Han, 2026
+
 class VirtualMachine {
     let byteCode: [UInt8]
     private var instPtr = 0
