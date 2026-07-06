@@ -57,7 +57,26 @@ class VirtualMachine {
                     return
                 }
                 print("VM Output: \(value)")
+            case .multiply:
+                let b = stack.removeLast()
+                let a = stack.removeLast()
+                stack.append(a * b)
+            case .divide:
+                let b = stack.removeLast()
+                let a = stack.removeLast()
+
+                guard b != 0 else {
+                    runtimeError("Division by 0 error.")
+                    return
+                }
+
+                stack.append(a / b)
+
             }
         }
+    }
+
+    private func runtimeError(_ message: String) {
+        print("runtime error: \(message)")
     }
 }
