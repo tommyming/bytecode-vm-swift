@@ -1,4 +1,5 @@
 // Tommy Han, 2026
+
 /// Required OptCode
 enum OptCode: UInt8 {
     case halt = 0x00
