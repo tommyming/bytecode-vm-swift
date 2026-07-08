@@ -29,7 +29,7 @@ let vm = VirtualMachine()
         let lexer = Lexer(source: input)
         let tokens = lexer.scanTokens()
 
-        print("Generated Tokens: \(tokens)")
+        print("Generated Tokens: \n\(tokens)")
 
         // Next steps (once implemented):
         // let bytecode = parser.parse(tokens)
