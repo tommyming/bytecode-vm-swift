@@ -2,7 +2,7 @@
 
 enum TokenType {
     case instruction(OptCode)
-    case integer
+    case integer(Int)
     case newline
     case eof
 }

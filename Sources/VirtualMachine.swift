@@ -1,14 +1,10 @@
 // Tommy Han, 2026
 
 class VirtualMachine {
-    let byteCode: [UInt8]
+    var byteCode: [UInt8] = []
     private var instPtr = 0
     private var stack: [Int] = []
     private var isRunning = false
-
-    init(byteCode: [UInt8]) {
-        self.byteCode = byteCode
-    }
 
     func run() {
         isRunning = true
