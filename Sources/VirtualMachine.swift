@@ -8,6 +8,8 @@ class VirtualMachine {
 
     func run() {
         isRunning = true
+        instPtr = 0 // reset the instruction pointer between each operations.
+        stack = []
 
         while isRunning && instPtr < byteCode.count {
             // 1. FETCH next byte
@@ -70,6 +72,8 @@ class VirtualMachine {
 
             }
         }
+
+        print("\(stack.first)")
     }
 
     private func runtimeError(_ message: String) {

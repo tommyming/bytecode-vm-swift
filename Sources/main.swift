@@ -25,17 +25,15 @@ let vm = VirtualMachine()
             continue
         }
 
-        // Pass the raw string to your Lexer
+        // Lex raw text into tokens
         let lexer = Lexer(source: input)
         let tokens = lexer.scanTokens()
 
-        print("Generated Tokens: \n\(tokens)")
+        // Parse tokens into bytecode and load into the VM
+        let parser = Parser(tokens: tokens)
+        let byteCode = parser.parse()
+        vm.byteCode = byteCode
 
-        // Next steps (once implemented):
-        // let bytecode = parser.parse(tokens)
-        // vm.interpret(bytecode)
-
-        // vm.byteCode = sthElse
         vm.run()
     }
 }

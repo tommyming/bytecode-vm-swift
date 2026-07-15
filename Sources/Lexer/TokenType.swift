@@ -1,6 +1,6 @@
 // Tommy Han, 2026
 
-enum TokenType {
+enum TokenType: Equatable {
     case instruction(OptCode)
     case integer(Int)
     case newline
