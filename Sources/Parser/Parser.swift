@@ -1,76 +1,73 @@
 class Parser {
     private let tokens: [Token]
     private var current = 0
-    private var bytecode: [UInt8] = []
 
     init(tokens: [Token]) {
         self.tokens = tokens
     }
 
-    func parse() -> [UInt8] {
-        bytecode.removeAll()
-
-        // Parse the expression and write instructions to the bytecode array
-        expression()
-
-        // Always end with a halt instruction
-        bytecode.append(OptCode.halt.rawValue)
-        return bytecode
+    /// Parse the token stream into an AST. Returns the root expression.
+    func parse() -> Expr {
+        current = 0
+        return expression()
     }
 
     // MARK: - Parser Grammar Rules
 
     // expression -> term ( ( "+" | "-" ) term )*
-    private func expression() {
-        term()
+    private func expression() -> Expr {
+        var expr = term()
 
         while match(.instruction(.add)) || match(.instruction(.minus)) {
             let operatorToken = previous()
+            let right = term()
 
-            // Parse the right-hand side of the operator
-            term()
-
-            // Emit the math instruction AFTER both operands are pushed onto the stack
-            if operatorToken.type == .instruction(.add) {
-                bytecode.append(OptCode.add.rawValue)
-            } else if operatorToken.type == .instruction(.minus) {
-                bytecode.append(OptCode.minus.rawValue)
-            }
+            // Build a left-associative tree: ((a + b) + c)
+            expr = .binary(
+                op: opCode(from: operatorToken),
+                left: expr,
+                right: right
+            )
         }
+        return expr
     }
 
     // term -> factor ( ( "*" | "/" ) factor )*
-    private func term() {
-        factor()
+    private func term() -> Expr {
+        var expr = factor()
 
         while match(.instruction(.multiply)) || match(.instruction(.divide)) {
             let operatorToken = previous()
+            let right = factor()
 
-            factor()
-
-            if operatorToken.type == .instruction(.multiply) {
-                bytecode.append(OptCode.multiply.rawValue)
-            } else if operatorToken.type == .instruction(.divide) {
-                bytecode.append(OptCode.divide.rawValue)
-            }
+            expr = .binary(
+                op: opCode(from: operatorToken),
+                left: expr,
+                right: right
+            )
         }
+        return expr
     }
 
     // factor -> integer
-    private func factor() {
+    private func factor() -> Expr {
         if matchInteger() {
-            if case let .integer(value) = previous().type {
-                // Emit the push instruction and then the literal value
-                bytecode.append(OptCode.pushi.rawValue)
-                bytecode.append(UInt8(value)) // Assuming small integers for simplicity
+            if case .integer(let value) = previous().type {
+                return .number(value)
             }
-            return
         }
-
         fatalError("Parser Error: Expected a number on line \(peek().line)")
     }
 
-    // MARK: - Token Traversal Helpers
+    // MARK: - Helpers
+
+    /// Map a binary operator token to its OptCode.
+    private func opCode(from token: Token) -> OptCode {
+        switch token.type {
+        case .instruction(let op): return op
+        default: fatalError("Parser Error: Expected an operator token, got \(token.type)")
+        }
+    }
 
     private func match(_ type: TokenType) -> Bool {
         if check(type) {
