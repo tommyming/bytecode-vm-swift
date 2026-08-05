@@ -49,13 +49,19 @@ class Parser {
         return expr
     }
 
-    // unary -> ( "-" ) unary | factor
+    // unary -> ( "-" | "+" ) unary | factor
     // Binds tighter than * / so that "-2 * 3" parses as "(-2) * 3",
-    // and recursive so that "--2" is allowed.
+    // and recursive so that "--2" or "+-2" are allowed.
+    //
+    // A leading "+" is a no-op (unary plus): it is discarded and the
+    // operand is parsed normally. So "+5" is just 5.
     private func unary() -> Expr {
         if match(.instruction(.minus)) {
             let expr = unary()
             return .unary(op: .minus, expr: expr)
+        }
+        if match(.instruction(.add)) {
+            return unary()  // discard the "+", parse the operand as-is
         }
         return factor()
     }
