@@ -4,7 +4,6 @@ class Lexer {
     private var current: String.Index
     private var line = 1
 
-    // Map your string keywords to your actual OptCode enum
     private let keywords: [String: OptCode] = [
         "halt": .halt,
         "pushi": .pushi,
@@ -35,26 +34,25 @@ class Lexer {
                 readIdentifier()
             } else if char.isNumber {
                 readNumber()
-            } else if char == "+" {  // addition
+            } else if char == "+" {
                 tokens.append(Token(type: .instruction(.add), line: line))
                 current = source.index(after: current)
-            } else if char == "-" {  // subtraction
+            } else if char == "-" {
                 tokens.append(Token(type: .instruction(.minus), line: line))
                 current = source.index(after: current)
-            } else if char == "*" {  // multiplication
+            } else if char == "*" {
                 tokens.append(Token(type: .instruction(.multiply), line: line))
                 current = source.index(after: current)
-            } else if char == "/" {  // division
+            } else if char == "/" {
                 tokens.append(Token(type: .instruction(.divide), line: line))
                 current = source.index(after: current)
-            } else if char == "(" {  // grouping
+            } else if char == "(" {
                 tokens.append(Token(type: .lparen, line: line))
                 current = source.index(after: current)
-            } else if char == ")" {  // grouping
+            } else if char == ")" {
                 tokens.append(Token(type: .rparen, line: line))
                 current = source.index(after: current)
             } else {
-                // Ignore or handle invalid characters gracefully
                 current = source.index(after: current)
             }
         }
@@ -66,7 +64,7 @@ class Lexer {
     private func skipWhitespace() {
         while current < source.endIndex {
             let char = source[current]
-            // We treat spaces/tabs as whitespace, but keep newlines for line tracking
+            // Newlines are not skipped here; they are tracked separately.
             if char == " " || char == "\t" || char == "\r" {
                 current = source.index(after: current)
             } else {

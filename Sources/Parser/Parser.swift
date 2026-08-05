@@ -6,7 +6,6 @@ class Parser {
         self.tokens = tokens
     }
 
-    /// Parse the token stream into an AST. Returns the root expression.
     func parse() -> Expr {
         current = 0
         return expression()
@@ -50,25 +49,21 @@ class Parser {
     }
 
     // unary -> ( "-" | "+" ) unary | factor
-    // Binds tighter than * / so that "-2 * 3" parses as "(-2) * 3",
-    // and recursive so that "--2" or "+-2" are allowed.
-    //
-    // A leading "+" is a no-op (unary plus): it is discarded and the
-    // operand is parsed normally. So "+5" is just 5.
+    // Binds tighter than * / so that "-2 * 3" parses as "(-2) * 3".
+    // A leading "+" is a no-op and is discarded.
     private func unary() -> Expr {
         if match(.instruction(.minus)) {
             let expr = unary()
             return .unary(op: .minus, expr: expr)
         }
         if match(.instruction(.add)) {
-            return unary()  // discard the "+", parse the operand as-is
+            return unary()
         }
         return factor()
     }
 
     // factor -> integer | "(" expression ")"
     private func factor() -> Expr {
-        // Parenthesized sub-expression: recurse back to the top rule.
         if match(.lparen) {
             let expr = expression()
             if !match(.rparen) {
@@ -87,7 +82,6 @@ class Parser {
 
     // MARK: - Helpers
 
-    /// Map a binary operator token to its OptCode.
     private func opCode(from token: Token) -> OptCode {
         switch token.type {
         case .instruction(let op): return op

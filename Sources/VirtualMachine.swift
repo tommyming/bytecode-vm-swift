@@ -8,21 +8,18 @@ class VirtualMachine {
 
     func run() {
         isRunning = true
-        instPtr = 0 // reset the instruction pointer between each operations.
+        instPtr = 0
         stack = []
 
         while isRunning && instPtr < byteCode.count {
-            // 1. FETCH next byte
             let rawOpcode = byteCode[instPtr]
             instPtr += 1
 
-            // Decode the byte into our OpCode enum
             guard let opcode = OptCode(rawValue: rawOpcode) else {
                 print("Runtime Error: Unknown instruction 0x\(String(rawOpcode, radix: 16))")
                 return
             }
 
-            // 2. DECODE & EXECUTE
             switch opcode {
             case .halt:
                 isRunning = false
