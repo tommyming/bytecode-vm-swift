@@ -47,6 +47,12 @@ class Lexer {
             } else if char == "/" {  // division
                 tokens.append(Token(type: .instruction(.divide), line: line))
                 current = source.index(after: current)
+            } else if char == "(" {  // grouping
+                tokens.append(Token(type: .lparen, line: line))
+                current = source.index(after: current)
+            } else if char == ")" {  // grouping
+                tokens.append(Token(type: .rparen, line: line))
+                current = source.index(after: current)
             } else {
                 // Ignore or handle invalid characters gracefully
                 current = source.index(after: current)

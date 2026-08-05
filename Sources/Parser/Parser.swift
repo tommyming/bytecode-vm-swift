@@ -32,13 +32,13 @@ class Parser {
         return expr
     }
 
-    // term -> factor ( ( "*" | "/" ) factor )*
+    // term -> unary ( ( "*" | "/" ) unary )*
     private func term() -> Expr {
-        var expr = factor()
+        var expr = unary()
 
         while match(.instruction(.multiply)) || match(.instruction(.divide)) {
             let operatorToken = previous()
-            let right = factor()
+            let right = unary()
 
             expr = .binary(
                 op: opCode(from: operatorToken),
@@ -49,14 +49,34 @@ class Parser {
         return expr
     }
 
-    // factor -> integer
+    // unary -> ( "-" ) unary | factor
+    // Binds tighter than * / so that "-2 * 3" parses as "(-2) * 3",
+    // and recursive so that "--2" is allowed.
+    private func unary() -> Expr {
+        if match(.instruction(.minus)) {
+            let expr = unary()
+            return .unary(op: .minus, expr: expr)
+        }
+        return factor()
+    }
+
+    // factor -> integer | "(" expression ")"
     private func factor() -> Expr {
+        // Parenthesized sub-expression: recurse back to the top rule.
+        if match(.lparen) {
+            let expr = expression()
+            if !match(.rparen) {
+                fatalError("Parser Error: Expected ')' on line \(peek().line)")
+            }
+            return expr
+        }
+
         if matchInteger() {
             if case .integer(let value) = previous().type {
                 return .number(value)
             }
         }
-        fatalError("Parser Error: Expected a number on line \(peek().line)")
+        fatalError("Parser Error: Expected a number or '(' on line \(peek().line)")
     }
 
     // MARK: - Helpers

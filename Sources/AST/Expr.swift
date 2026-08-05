@@ -7,6 +7,7 @@
 /// reference itself recursively without bloating the value size.
 indirect enum Expr {
     case number(Int)
+    case unary(op: OptCode, expr: Expr)
     case binary(op: OptCode, left: Expr, right: Expr)
 
     // MARK: - Bytecode Generation
@@ -19,6 +20,14 @@ indirect enum Expr {
         case .number(let value):
             // pushi <value>
             return [OptCode.pushi.rawValue, UInt8(value)]
+
+        case .unary(let op, let expr):
+            // Desugar unary minus as (0 - expr): push 0, push expr, subtract.
+            // No new VM opcode needed.
+            var bytes: [UInt8] = [OptCode.pushi.rawValue, 0]
+            bytes.append(contentsOf: expr.emitBytecode())
+            bytes.append(op.rawValue)
+            return bytes
 
         case .binary(let op, let left, let right):
             var bytes = left.emitBytecode()
@@ -52,6 +61,10 @@ indirect enum Expr {
         switch self {
         case .number(let value):
             print("\(prefix)\(connector)Number(\(value))")
+
+        case .unary(let op, let expr):
+            print("\(prefix)\(connector)UnaryOp(\(op))")
+            expr.printNode(prefix: childPrefix, isLast: true)
 
         case .binary(let op, let left, let right):
             print("\(prefix)\(connector)BinaryOp(\(op))")
