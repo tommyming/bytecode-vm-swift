@@ -38,8 +38,7 @@ class Lexer {
                 tokens.append(Token(type: .instruction(.add), line: line))
                 current = source.index(after: current)
             } else if char == "-" {
-                tokens.append(Token(type: .instruction(.minus), line: line))
-                current = source.index(after: current)
+                readMinusOrArrow()
             } else if char == "*" {
                 tokens.append(Token(type: .instruction(.multiply), line: line))
                 current = source.index(after: current)
@@ -51,6 +50,12 @@ class Lexer {
                 current = source.index(after: current)
             } else if char == ")" {
                 tokens.append(Token(type: .rparen, line: line))
+                current = source.index(after: current)
+            } else if char == ":" {
+                tokens.append(Token(type: .colon, line: line))
+                current = source.index(after: current)
+            } else if char == "," {
+                tokens.append(Token(type: .comma, line: line))
                 current = source.index(after: current)
             } else {
                 current = source.index(after: current)
@@ -75,15 +80,32 @@ class Lexer {
 
     private func readIdentifier() {
         let start = current
-        while current < source.endIndex && source[current].isLetter {
+        while current < source.endIndex
+            && (source[current].isLetter
+                || source[current].isNumber
+                || source[current] == "_")
+        {
             current = source.index(after: current)
         }
         let word = String(source[start..<current])
 
-        if let opCode = keywords[word] {
+        if word == "fn" {
+            tokens.append(Token(type: .fn, line: line))
+        } else if let opCode = keywords[word] {
             tokens.append(Token(type: .instruction(opCode), line: line))
         } else {
-            print("Lexer Error: Unknown instruction '\(word)' on line \(line)")
+            tokens.append(Token(type: .identifier(word), line: line))
+        }
+    }
+
+    private func readMinusOrArrow() {
+        let next = source.index(after: current)
+        if next < source.endIndex && source[next] == ">" {
+            tokens.append(Token(type: .arrow, line: line))
+            current = source.index(after: next)
+        } else {
+            tokens.append(Token(type: .instruction(.minus), line: line))
+            current = next
         }
     }
 

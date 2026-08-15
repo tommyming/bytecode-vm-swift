@@ -2,9 +2,22 @@
 
 class VirtualMachine {
     var byteCode: [UInt8] = []
+    private(set) var functions: [String: FunctionBlock] = [:]
     private var instPtr = 0
     private var stack: [Int] = []
     private var isRunning = false
+
+    func load(_ program: BytecodeProgram) {
+        byteCode = program.entryPoint
+
+        for function in program.functions {
+            functions[function.name] = function
+        }
+    }
+
+    func function(named name: String) -> FunctionBlock? {
+        functions[name]
+    }
 
     func run() {
         isRunning = true
@@ -70,7 +83,9 @@ class VirtualMachine {
             }
         }
 
-        print("\(stack.first)")
+        if let result = stack.first {
+            print(result)
+        }
     }
 
     private func runtimeError(_ message: String) {

@@ -6,12 +6,61 @@ class Parser {
         self.tokens = tokens
     }
 
-    func parse() -> Expr {
+    func parse() -> Program {
         current = 0
-        return expression()
+        skipNewlines()
+
+        var functions: [FunctionDeclaration] = []
+        while match(.fn) {
+            functions.append(functionDeclaration())
+
+            if !isAtEnd() && !match(.newline) {
+                fatalError(
+                    "Parser Error: Expected a new line after function declaration on line \(peek().line)"
+                )
+            }
+            skipNewlines()
+        }
+
+        let topLevelExpression = isAtEnd() ? nil : expression()
+        skipNewlines()
+
+        if !isAtEnd() {
+            fatalError("Parser Error: Unexpected token \(peek().type) on line \(peek().line)")
+        }
+
+        return Program(functions: functions, expression: topLevelExpression)
     }
 
     // MARK: - Parser Grammar Rules
+
+    // functionDeclaration -> identifier "(" parameters? ")" "->" identifier
+    private func functionDeclaration() -> FunctionDeclaration {
+        let name = consumeIdentifier(message: "Expected a function name after 'fn'")
+        consume(.lparen, message: "Expected '(' after function name")
+
+        var parameters: [FunctionParameter] = []
+        if !check(.rparen) {
+            repeat {
+                let parameterName = consumeIdentifier(message: "Expected a parameter name")
+                consume(.colon, message: "Expected ':' after parameter name")
+                let typeName = consumeIdentifier(message: "Expected a parameter type")
+                parameters.append(
+                    FunctionParameter(name: parameterName, typeName: typeName)
+                )
+            } while match(.comma)
+        }
+
+        consume(.rparen, message: "Expected ')' after function parameters")
+        consume(.arrow, message: "Expected '->' after function parameters")
+        let returnType = consumeIdentifier(message: "Expected a return type")
+
+        return FunctionDeclaration(
+            name: name,
+            parameters: parameters,
+            returnType: returnType
+        )
+    }
 
     // expression -> term ( ( "+" | "-" ) term )*
     private func expression() -> Expr {
@@ -104,6 +153,25 @@ class Parser {
             return true
         }
         return false
+    }
+
+    private func consume(_ type: TokenType, message: String) {
+        if match(type) {
+            return
+        }
+        fatalError("Parser Error: \(message) on line \(peek().line)")
+    }
+
+    private func consumeIdentifier(message: String) -> String {
+        if case .identifier(let name) = peek().type {
+            _ = advance()
+            return name
+        }
+        fatalError("Parser Error: \(message) on line \(peek().line)")
+    }
+
+    private func skipNewlines() {
+        while match(.newline) {}
     }
 
     private func check(_ type: TokenType) -> Bool {

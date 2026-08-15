@@ -1,5 +1,3 @@
-import Foundation
-
 let vm = VirtualMachine()
 
 @MainActor func runREPL() {
@@ -15,7 +13,7 @@ let vm = VirtualMachine()
             break
         }
 
-        if input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if input.allSatisfy(\.isWhitespace) {
             continue
         }
 
@@ -23,15 +21,20 @@ let vm = VirtualMachine()
         let tokens = lexer.scanTokens()
 
         let parser = Parser(tokens: tokens)
-        let ast = parser.parse()
+        let program = parser.parse()
 
-        ast.prettyPrint()
+        program.prettyPrint()
 
-        var byteCode = ast.emitBytecode()
-        byteCode.append(OptCode.halt.rawValue)
-        vm.byteCode = byteCode
+        let bytecodeProgram = program.emitBytecode()
+        vm.load(bytecodeProgram)
 
-        vm.run()
+        if bytecodeProgram.entryPoint.isEmpty {
+            for function in bytecodeProgram.functions {
+                print("Loaded function block '\(function.name)'")
+            }
+        } else {
+            vm.run()
+        }
     }
 }
 
