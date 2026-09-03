@@ -3,12 +3,37 @@ class Parser {
     private var current = 0
 
     init(tokens: [Token]) {
-        self.tokens = tokens
+        self.tokens = tokens.filter { $0.type != .newline }
     }
 
-    func parse() -> Expr {
+    func parse() -> Program {
         current = 0
-        return expression()
+        var functions: [FunctionDecl] = []
+        while match(.funKeyword) {
+            functions.append(functionDeclaration())
+        }
+        let mainExpression = expression()
+        if !isAtEnd() {
+            fatalError("Parser Error: Unexpected token on line \(peek().line)")
+        }
+        return Program(functions: functions, expression: mainExpression)
+    }
+
+    private func functionDeclaration() -> FunctionDecl {
+        let name = consumeIdentifier("Expected a function name")
+        consume(.lparen, "Expected '(' after function name")
+
+        var parameters: [String] = []
+        if !check(.rparen) {
+            repeat {
+                parameters.append(consumeIdentifier("Expected a parameter name"))
+            } while match(.comma)
+        }
+        consume(.rparen, "Expected ')' after parameters")
+        consume(.leftBrace, "Expected '{' before function body")
+        let body = expression()
+        consume(.rightBrace, "Expected '}' after function body")
+        return FunctionDecl(name: name, parameters: parameters, body: body)
     }
 
     // MARK: - Parser Grammar Rules
@@ -62,7 +87,7 @@ class Parser {
         return factor()
     }
 
-    // factor -> integer | "(" expression ")"
+    // factor -> integer | identifier | call | "(" expression ")"
     private func factor() -> Expr {
         if match(.lparen) {
             let expr = expression()
@@ -77,7 +102,22 @@ class Parser {
                 return .number(value)
             }
         }
-        fatalError("Parser Error: Expected a number or '(' on line \(peek().line)")
+        if case .identifier(let name) = peek().type {
+            _ = advance()
+            if !match(.lparen) {
+                return .variable(name)
+            }
+
+            var arguments: [Expr] = []
+            if !check(.rparen) {
+                repeat {
+                    arguments.append(expression())
+                } while match(.comma)
+            }
+            consume(.rparen, "Expected ')' after arguments")
+            return .call(name: name, arguments: arguments)
+        }
+        fatalError("Parser Error: Expected an expression on line \(peek().line)")
     }
 
     // MARK: - Helpers
@@ -104,6 +144,20 @@ class Parser {
             return true
         }
         return false
+    }
+
+    private func consumeIdentifier(_ message: String) -> String {
+        if case .identifier(let name) = peek().type {
+            _ = advance()
+            return name
+        }
+        fatalError("Parser Error: \(message) on line \(peek().line)")
+    }
+
+    private func consume(_ type: TokenType, _ message: String) {
+        if !match(type) {
+            fatalError("Parser Error: \(message) on line \(peek().line)")
+        }
     }
 
     private func check(_ type: TokenType) -> Bool {

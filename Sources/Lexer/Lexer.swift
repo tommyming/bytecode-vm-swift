@@ -52,6 +52,15 @@ class Lexer {
             } else if char == ")" {
                 tokens.append(Token(type: .rparen, line: line))
                 current = source.index(after: current)
+            } else if char == "{" {
+                tokens.append(Token(type: .leftBrace, line: line))
+                current = source.index(after: current)
+            } else if char == "}" {
+                tokens.append(Token(type: .rightBrace, line: line))
+                current = source.index(after: current)
+            } else if char == "," {
+                tokens.append(Token(type: .comma, line: line))
+                current = source.index(after: current)
             } else {
                 current = source.index(after: current)
             }
@@ -82,8 +91,10 @@ class Lexer {
 
         if let opCode = keywords[word] {
             tokens.append(Token(type: .instruction(opCode), line: line))
+        } else if word == "fun" {
+            tokens.append(Token(type: .funKeyword, line: line))
         } else {
-            print("Lexer Error: Unknown instruction '\(word)' on line \(line)")
+            tokens.append(Token(type: .identifier(word), line: line))
         }
     }
 

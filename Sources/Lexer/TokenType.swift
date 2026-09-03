@@ -3,8 +3,13 @@
 enum TokenType: Equatable {
     case instruction(OptCode)
     case integer(Int)
+    case identifier(String)
+    case funKeyword
     case lparen  // "("
     case rparen  // ")"
+    case leftBrace
+    case rightBrace
+    case comma
     case newline
     case eof
 }

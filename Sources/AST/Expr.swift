@@ -2,30 +2,10 @@
 
 indirect enum Expr {
     case number(Int)
+    case variable(String)
+    case call(name: String, arguments: [Expr])
     case unary(op: OptCode, expr: Expr)
     case binary(op: OptCode, left: Expr, right: Expr)
-
-    // MARK: - Bytecode Generation
-
-    func emitBytecode() -> [UInt8] {
-        switch self {
-        case .number(let value):
-            return [OptCode.pushi.rawValue, UInt8(value)]
-
-        case .unary(let op, let expr):
-            // Desugar unary minus as (0 - expr) so no new VM opcode is needed.
-            var bytes: [UInt8] = [OptCode.pushi.rawValue, 0]
-            bytes.append(contentsOf: expr.emitBytecode())
-            bytes.append(op.rawValue)
-            return bytes
-
-        case .binary(let op, let left, let right):
-            var bytes = left.emitBytecode()
-            bytes.append(contentsOf: right.emitBytecode())
-            bytes.append(op.rawValue)
-            return bytes
-        }
-    }
 
     // MARK: - Debug Printing
 
@@ -42,6 +22,15 @@ indirect enum Expr {
         case .number(let value):
             print("\(prefix)\(connector)Number(\(value))")
 
+        case .variable(let name):
+            print("\(prefix)\(connector)Variable(\(name))")
+
+        case .call(let name, let arguments):
+            print("\(prefix)\(connector)Call(\(name))")
+            for (index, argument) in arguments.enumerated() {
+                argument.printNode(prefix: childPrefix, isLast: index == arguments.count - 1)
+            }
+
         case .unary(let op, let expr):
             print("\(prefix)\(connector)UnaryOp(\(op))")
             expr.printNode(prefix: childPrefix, isLast: true)
@@ -51,5 +40,25 @@ indirect enum Expr {
             left.printNode(prefix: childPrefix, isLast: false)
             right.printNode(prefix: childPrefix, isLast: true)
         }
+    }
+}
+
+struct FunctionDecl {
+    let name: String
+    let parameters: [String]
+    let body: Expr
+}
+
+struct Program {
+    let functions: [FunctionDecl]
+    let expression: Expr
+
+    func prettyPrint() {
+        for function in functions {
+            print("Function \(function.name)(\(function.parameters.joined(separator: ", ")))")
+            function.body.prettyPrint()
+        }
+        print("Main")
+        expression.prettyPrint()
     }
 }

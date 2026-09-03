@@ -1,15 +1,23 @@
 // Tommy Han, 2026
 
 class VirtualMachine {
+    private struct CallFrame {
+        let returnAddress: Int
+        let stackBase: Int
+    }
+
     var byteCode: [UInt8] = []
     private var instPtr = 0
     private var stack: [Int] = []
+    private var callFrames: [CallFrame] = []
     private var isRunning = false
 
-    func run() {
+    @discardableResult
+    func run() -> Int? {
         isRunning = true
         instPtr = 0
         stack = []
+        callFrames = []
 
         while isRunning && instPtr < byteCode.count {
             let rawOpcode = byteCode[instPtr]
@@ -17,7 +25,7 @@ class VirtualMachine {
 
             guard let opcode = OptCode(rawValue: rawOpcode) else {
                 print("Runtime Error: Unknown instruction 0x\(String(rawOpcode, radix: 16))")
-                return
+                return nil
             }
 
             switch opcode {
@@ -33,7 +41,7 @@ class VirtualMachine {
             case .add:
                 guard stack.count >= 2 else {
                     print("Runtime Error: Stack underflow on ADD")
-                    return
+                    return nil
                 }
                 let b = stack.removeLast()
                 let a = stack.removeLast()
@@ -41,7 +49,7 @@ class VirtualMachine {
             case .minus:
                 guard stack.count >= 2 else {
                     print("Runtime Error: Stack underflow on MINUS")
-                    return
+                    return nil
                 }
                 let b = stack.removeLast()
                 let a = stack.removeLast()
@@ -49,7 +57,7 @@ class VirtualMachine {
             case .print:
                 guard let value = stack.popLast() else {
                     print("Runtime Error: Stack underflow on PRINT")
-                    return
+                    return nil
                 }
                 print("VM Output: \(value)")
             case .multiply:
@@ -62,15 +70,38 @@ class VirtualMachine {
 
                 guard b != 0 else {
                     runtimeError("Division by 0 error.")
-                    return
+                    return nil
                 }
 
                 stack.append(a / b)
 
+            case .loadLocal:
+                let index = Int(byteCode[instPtr])
+                instPtr += 1
+                let stackBase = callFrames.last?.stackBase ?? 0
+                stack.append(stack[stackBase + index])
+
+            case .call:
+                let address = Int(byteCode[instPtr])
+                let argumentCount = Int(byteCode[instPtr + 1])
+                instPtr += 2
+                callFrames.append(CallFrame(returnAddress: instPtr, stackBase: stack.count - argumentCount))
+                instPtr = address
+
+            case .returnValue:
+                let result = stack.removeLast()
+                let frame = callFrames.removeLast()
+                stack.removeSubrange(frame.stackBase..<stack.count)
+                stack.append(result)
+                instPtr = frame.returnAddress
+
             }
         }
 
-        print("\(stack.first)")
+        if let result = stack.last {
+            print("\(result)")
+        }
+        return stack.last
     }
 
     private func runtimeError(_ message: String) {
