@@ -33,7 +33,10 @@ struct Compiler {
             guard expectedArguments == callSite.argumentCount else {
                 fatalError("Compiler Error: '\(callSite.functionName)' expects \(expectedArguments) arguments, got \(callSite.argumentCount)")
             }
-            bytecode[callSite.addressIndex] = UInt8(address)
+            bytecode[callSite.addressIndex] = UInt8(truncatingIfNeeded: address)
+            bytecode[callSite.addressIndex + 1] = UInt8(truncatingIfNeeded: address >> 8)
+            bytecode[callSite.addressIndex + 2] = UInt8(truncatingIfNeeded: address >> 16)
+            bytecode[callSite.addressIndex + 3] = UInt8(truncatingIfNeeded: address >> 24)
         }
 
         return bytecode
@@ -54,7 +57,7 @@ struct Compiler {
             }
             bytecode.append(OptCode.call.rawValue)
             let addressIndex = bytecode.count
-            bytecode.append(0)
+            bytecode.append(contentsOf: [0, 0, 0, 0])
             bytecode.append(UInt8(arguments.count))
             callSites.append(CallSite(addressIndex: addressIndex, functionName: name, argumentCount: arguments.count))
         case .unary(let op, let expression):

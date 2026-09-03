@@ -83,8 +83,11 @@ class VirtualMachine {
 
             case .call:
                 let address = Int(byteCode[instPtr])
-                let argumentCount = Int(byteCode[instPtr + 1])
-                instPtr += 2
+                    | Int(byteCode[instPtr + 1]) << 8
+                    | Int(byteCode[instPtr + 2]) << 16
+                    | Int(byteCode[instPtr + 3]) << 24
+                let argumentCount = Int(byteCode[instPtr + 4])
+                instPtr += 5
                 callFrames.append(CallFrame(returnAddress: instPtr, stackBase: stack.count - argumentCount))
                 instPtr = address
 

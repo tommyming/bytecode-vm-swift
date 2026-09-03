@@ -25,4 +25,15 @@ final class FunctionTests: XCTestCase {
 
         XCTAssertEqual(vm.run(), 18)
     }
+
+    func testFunctionAddressCanExceedOneByte() {
+        let expression = "1" + String(repeating: " + 1", count: 130)
+        let source = "fun identity(value) { value } identity(\(expression))"
+        let program = Parser(tokens: Lexer(source: source).scanTokens()).parse()
+        var compiler = Compiler()
+        let vm = VirtualMachine()
+        vm.byteCode = compiler.compile(program)
+
+        XCTAssertEqual(vm.run(), 131)
+    }
 }
