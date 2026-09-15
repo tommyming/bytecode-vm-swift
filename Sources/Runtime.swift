@@ -4,6 +4,8 @@ public func runSource(_ source: String, printAST: Bool = false) -> Int? {
     if printAST {
         program.prettyPrint()
     }
+    var typeChecker = TypeChecker()
+    typeChecker.check(program)
     var compiler = Compiler()
     let vm = VirtualMachine()
     vm.byteCode = compiler.compile(program)

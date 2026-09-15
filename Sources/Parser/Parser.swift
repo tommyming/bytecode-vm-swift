@@ -23,17 +23,26 @@ class Parser {
         let name = consumeIdentifier("Expected a function name")
         consume(.lparen, "Expected '(' after function name")
 
-        var parameters: [String] = []
+        var parameters: [Parameter] = []
         if !check(.rparen) {
             repeat {
-                parameters.append(consumeIdentifier("Expected a parameter name"))
+                let parameterName = consumeIdentifier("Expected a parameter name")
+                // An unannotated parameter defaults to 'int', the only supported type.
+                let parameterType = match(.colon) ? consumeType("Expected a parameter type after ':'") : .int
+                parameters.append(Parameter(name: parameterName, type: parameterType))
             } while match(.comma)
         }
         consume(.rparen, "Expected ')' after parameters")
+
+        var returnType: ValueType? = nil
+        if match(.arrow) {
+            returnType = consumeType("Expected a return type after '->'")
+        }
+
         consume(.leftBrace, "Expected '{' before function body")
         let body = expression()
         consume(.rightBrace, "Expected '}' after function body")
-        return FunctionDecl(name: name, parameters: parameters, body: body)
+        return FunctionDecl(name: name, parameters: parameters, returnType: returnType, body: body)
     }
 
     // MARK: - Parser Grammar Rules
@@ -150,6 +159,14 @@ class Parser {
         if case .identifier(let name) = peek().type {
             _ = advance()
             return name
+        }
+        fatalError("Parser Error: \(message) on line \(peek().line)")
+    }
+
+    private func consumeType(_ message: String) -> ValueType {
+        if case .type(let type) = peek().type {
+            _ = advance()
+            return type
         }
         fatalError("Parser Error: \(message) on line \(peek().line)")
     }

@@ -38,7 +38,17 @@ class Lexer {
                 tokens.append(Token(type: .instruction(.add), line: line))
                 current = source.index(after: current)
             } else if char == "-" {
-                tokens.append(Token(type: .instruction(.minus), line: line))
+                if let next = source.index(current, offsetBy: 1, limitedBy: source.endIndex),
+                   source[next] == ">" {
+                    tokens.append(Token(type: .arrow, line: line))
+                    current = source.index(after: current)
+                    current = source.index(after: current)
+                } else {
+                    tokens.append(Token(type: .instruction(.minus), line: line))
+                    current = source.index(after: current)
+                }
+            } else if char == ":" {
+                tokens.append(Token(type: .colon, line: line))
                 current = source.index(after: current)
             } else if char == "*" {
                 tokens.append(Token(type: .instruction(.multiply), line: line))
@@ -93,6 +103,8 @@ class Lexer {
             tokens.append(Token(type: .instruction(opCode), line: line))
         } else if word == "fun" {
             tokens.append(Token(type: .funKeyword, line: line))
+        } else if word == "int" {
+            tokens.append(Token(type: .type(.int), line: line))
         } else {
             tokens.append(Token(type: .identifier(word), line: line))
         }

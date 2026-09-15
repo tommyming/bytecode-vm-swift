@@ -5,6 +5,9 @@ enum TokenType: Equatable {
     case integer(Int)
     case identifier(String)
     case funKeyword
+    case type(ValueType)
+    case colon  // ":"
+    case arrow  // "->"
     case lparen  // "("
     case rparen  // ")"
     case leftBrace

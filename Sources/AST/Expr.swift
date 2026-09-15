@@ -43,9 +43,15 @@ indirect enum Expr {
     }
 }
 
+struct Parameter {
+    let name: String
+    let type: ValueType
+}
+
 struct FunctionDecl {
     let name: String
-    let parameters: [String]
+    let parameters: [Parameter]
+    let returnType: ValueType? // nil means the function returns nothing
     let body: Expr
 }
 
@@ -55,7 +61,11 @@ struct Program {
 
     func prettyPrint() {
         for function in functions {
-            print("Function \(function.name)(\(function.parameters.joined(separator: ", ")))")
+            let parameterList = function.parameters
+                .map { "\($0.name): \($0.type.name)" }
+                .joined(separator: ", ")
+            let returnType = function.returnType.map { " -> \($0.name)" } ?? ""
+            print("Function \(function.name)(\(parameterList))\(returnType)")
             function.body.prettyPrint()
         }
         print("Main")

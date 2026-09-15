@@ -20,7 +20,7 @@ struct Compiler {
 
         for function in program.functions {
             functionAddresses[function.name] = bytecode.count
-            let parameters = Dictionary(uniqueKeysWithValues: function.parameters.enumerated().map { ($0.element, $0.offset) })
+            let parameters = Dictionary(uniqueKeysWithValues: function.parameters.enumerated().map { ($0.element.name, $0.offset) })
             emit(function.body, parameters: parameters)
             bytecode.append(OptCode.returnValue.rawValue)
         }
