@@ -59,14 +59,15 @@ while true {
         break
     }
     if input == "exit" { break }
-    let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
+    let code = input.range(of: "//").map { String(input[..<$0.lowerBound]) } ?? input
+    let trimmedInput = code.trimmingCharacters(in: .whitespacesAndNewlines)
     if trimmedInput.isEmpty { continue }
 
     if braceDepth == 0 && trimmedInput.split(whereSeparator: { $0.isWhitespace }).first == "fun" {
         awaitingFunctionBody = true
     }
     source += input + "\n"
-    for character in input {
+    for character in code {
         switch character {
         case "{":
             braceDepth += 1

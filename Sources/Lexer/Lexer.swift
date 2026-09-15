@@ -54,8 +54,14 @@ class Lexer {
                 tokens.append(Token(type: .instruction(.multiply), line: line))
                 current = source.index(after: current)
             } else if char == "/" {
-                tokens.append(Token(type: .instruction(.divide), line: line))
                 current = source.index(after: current)
+                if current < source.endIndex && source[current] == "/" {
+                    while current < source.endIndex && source[current] != "\n" {
+                        current = source.index(after: current)
+                    }
+                } else {
+                    tokens.append(Token(type: .instruction(.divide), line: line))
+                }
             } else if char == "(" {
                 tokens.append(Token(type: .lparen, line: line))
                 current = source.index(after: current)

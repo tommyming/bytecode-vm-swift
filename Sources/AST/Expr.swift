@@ -14,7 +14,7 @@ indirect enum Expr {
         printNode(prefix: "", isLast: true)
     }
 
-    private func printNode(prefix: String, isLast: Bool) {
+    fileprivate func printNode(prefix: String, isLast: Bool) {
         let connector = isLast ? "└── " : "├── "
         let childPrefix = prefix + (isLast ? "    " : "│   ")
 
@@ -61,12 +61,21 @@ struct Program {
 
     func prettyPrint() {
         for function in functions {
-            let parameterList = function.parameters
-                .map { "\($0.name): \($0.type.name)" }
-                .joined(separator: ", ")
-            let returnType = function.returnType.map { " -> \($0.name)" } ?? ""
-            print("Function \(function.name)(\(parameterList))\(returnType)")
-            function.body.prettyPrint()
+            print("Function \(function.name)")
+            print("├── Parameters ( ... )")
+            for (index, parameter) in function.parameters.enumerated() {
+                let connector = index == function.parameters.count - 1 ? "└── " : "├── "
+                print("│   \(connector)Parameter(\(parameter.name): \(parameter.type.name))")
+            }
+            let returnType = function.returnType.map { "-> \($0.name)" } ?? "none"
+            print("├── ReturnType(\(returnType))")
+            print("└── Body { ... }")
+            if function.returnType != nil {
+                print("    └── ImplicitReturn")
+                function.body.printNode(prefix: "        ", isLast: true)
+            } else {
+                function.body.printNode(prefix: "    ", isLast: true)
+            }
         }
         print("Main")
         expression.prettyPrint()
