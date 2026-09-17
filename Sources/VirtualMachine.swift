@@ -34,6 +34,10 @@ class VirtualMachine {
 
             case .pushi:
                 // Fetch the immediately following byte as the data payload
+                guard instPtr < byteCode.count else {
+                    print("Runtime Error: Truncated bytecode: PUSHI at offset \(instPtr - 1) is missing its operand")
+                    return nil
+                }
                 let value = Int(byteCode[instPtr])
                 instPtr += 1
                 stack.append(value)
@@ -61,10 +65,18 @@ class VirtualMachine {
                 }
                 print("VM Output: \(value)")
             case .multiply:
+                guard stack.count >= 2 else {
+                    print("Runtime Error: Stack underflow on MULTIPLY")
+                    return nil
+                }
                 let b = stack.removeLast()
                 let a = stack.removeLast()
                 stack.append(a * b)
             case .divide:
+                guard stack.count >= 2 else {
+                    print("Runtime Error: Stack underflow on DIVIDE")
+                    return nil
+                }
                 let b = stack.removeLast()
                 let a = stack.removeLast()
 
@@ -76,24 +88,54 @@ class VirtualMachine {
                 stack.append(a / b)
 
             case .loadLocal:
+                guard instPtr < byteCode.count else {
+                    print("Runtime Error: Truncated bytecode: LOAD_LOCAL at offset \(instPtr - 1) is missing its operand")
+                    return nil
+                }
                 let index = Int(byteCode[instPtr])
                 instPtr += 1
                 let stackBase = callFrames.last?.stackBase ?? 0
+                guard stack.indices.contains(stackBase + index) else {
+                    print("Runtime Error: LOAD_LOCAL read invalid local slot \(index)")
+                    return nil
+                }
                 stack.append(stack[stackBase + index])
 
             case .call:
+                guard instPtr + 5 <= byteCode.count else {
+                    print("Runtime Error: Truncated bytecode: CALL at offset \(instPtr - 1) is missing operands")
+                    return nil
+                }
                 let address = Int(byteCode[instPtr])
                     | Int(byteCode[instPtr + 1]) << 8
                     | Int(byteCode[instPtr + 2]) << 16
                     | Int(byteCode[instPtr + 3]) << 24
                 let argumentCount = Int(byteCode[instPtr + 4])
                 instPtr += 5
+                guard address < byteCode.count else {
+                    print("Runtime Error: CALL target 0x\(String(address, radix: 16)) is outside the bytecode")
+                    return nil
+                }
+                guard argumentCount <= stack.count else {
+                    print("Runtime Error: CALL expects \(argumentCount) arguments but the stack holds \(stack.count)")
+                    return nil
+                }
                 callFrames.append(CallFrame(returnAddress: instPtr, stackBase: stack.count - argumentCount))
                 instPtr = address
 
             case .returnValue:
-                let result = stack.removeLast()
-                let frame = callFrames.removeLast()
+                guard let frame = callFrames.popLast() else {
+                    print("Runtime Error: RETURN with no active call frame")
+                    return nil
+                }
+                guard let result = stack.popLast() else {
+                    print("Runtime Error: Stack underflow on RETURN")
+                    return nil
+                }
+                guard stack.count >= frame.stackBase else {
+                    print("Runtime Error: RETURN popped below its call frame's stack base")
+                    return nil
+                }
                 stack.removeSubrange(frame.stackBase..<stack.count)
                 stack.append(result)
                 instPtr = frame.returnAddress
