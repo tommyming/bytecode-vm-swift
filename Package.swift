@@ -16,6 +16,11 @@ let package = Package(
         .executableTarget(
             name: "bytecode-vm-swift",
             dependencies: ["BytecodeVM"],
-            path: "Sources/CLI")
+            path: "Sources/CLI"),
+        .testTarget(
+            name: "BytecodeVMTests",
+            dependencies: ["BytecodeVM"],
+            path: "Tests/BytecodeVMTests"
+        )
     ]
 )

@@ -45,7 +45,7 @@ final class Interpreter {
     ///   grows its call-frame array on the heap, but this interpreter recurses
     ///   through the native stack, so a limit keeps deep recursion from
     ///   crashing the process instead of reporting an error.
-    init(maxCallDepth: Int = 10_000) {
+    init(maxCallDepth: Int = 1_000) {
         self.maxCallDepth = maxCallDepth
     }
 

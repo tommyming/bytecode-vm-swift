@@ -78,6 +78,7 @@ class Lexer {
                 tokens.append(Token(type: .comma, line: line))
                 current = source.index(after: current)
             } else {
+                print("Lexer Error: Unexpected character '\(char)' on line \(line)")
                 current = source.index(after: current)
             }
         }
@@ -100,7 +101,7 @@ class Lexer {
 
     private func readIdentifier() {
         let start = current
-        while current < source.endIndex && source[current].isLetter {
+        while current < source.endIndex && (source[current].isLetter || source[current].isNumber) {
             current = source.index(after: current)
         }
         let word = String(source[start..<current])

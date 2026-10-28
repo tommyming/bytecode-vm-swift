@@ -10,6 +10,8 @@ class VirtualMachine {
     private var instPtr = 0
     private var stack: [Int] = []
     private var callFrames: [CallFrame] = []
+    private var callDepth = 0
+    private let maxCallDepth = 10_000
     private var isRunning = false
 
     @discardableResult
@@ -81,7 +83,7 @@ class VirtualMachine {
                 let a = stack.removeLast()
 
                 guard b != 0 else {
-                    runtimeError("Division by 0 error.")
+                    print("Runtime Error: Division by 0 error.")
                     return nil
                 }
 
@@ -120,6 +122,11 @@ class VirtualMachine {
                     print("Runtime Error: CALL expects \(argumentCount) arguments but the stack holds \(stack.count)")
                     return nil
                 }
+                guard callDepth < maxCallDepth else {
+                    print("Runtime Error: Call depth exceeded \(maxCallDepth) nested calls.")
+                    return nil
+                }
+                callDepth += 1
                 callFrames.append(CallFrame(returnAddress: instPtr, stackBase: stack.count - argumentCount))
                 instPtr = address
 
@@ -138,6 +145,7 @@ class VirtualMachine {
                 }
                 stack.removeSubrange(frame.stackBase..<stack.count)
                 stack.append(result)
+                callDepth -= 1
                 instPtr = frame.returnAddress
 
             }
