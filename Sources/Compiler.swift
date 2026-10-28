@@ -45,7 +45,7 @@ struct Compiler {
     private mutating func emit(_ expression: Expr, parameters: [String: Int]) {
         switch expression {
         case .number(let value):
-            bytecode.append(contentsOf: [OptCode.pushi.rawValue, UInt8(value)])
+            emitNumber(value)
         case .variable(let name):
             guard let index = parameters[name] else {
                 fatalError("Compiler Error: Unknown variable '\(name)'")
@@ -68,6 +68,35 @@ struct Compiler {
             emit(left, parameters: parameters)
             emit(right, parameters: parameters)
             bytecode.append(op.rawValue)
+        }
+    }
+
+    private mutating func emitNumber(_ value: Int) {
+        if value <= 255 {
+            bytecode.append(contentsOf: [OptCode.pushi.rawValue, UInt8(value)])
+            return
+        }
+
+        // A pushi operand holds a single byte, so wider numbers are built from
+        // their bytes: accumulator = accumulator * 256 + byte.
+        var value = value
+        var bytes: [Int] = []
+        while value > 0 {
+            bytes.append(value % 256)
+            value /= 256
+        }
+
+        bytecode.append(OptCode.pushi.rawValue)
+        bytecode.append(0)
+        for byte in bytes.reversed() {
+            for _ in 0..<8 {
+                bytecode.append(OptCode.pushi.rawValue)
+                bytecode.append(2)
+                bytecode.append(OptCode.multiply.rawValue)
+            }
+            bytecode.append(OptCode.pushi.rawValue)
+            bytecode.append(UInt8(byte))
+            bytecode.append(OptCode.add.rawValue)
         }
     }
 }

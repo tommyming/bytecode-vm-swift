@@ -121,14 +121,15 @@ final class Interpreter {
             throw RuntimeError.callDepthExceeded(maxCallDepth)
         }
 
+        callDepth += 1
+        defer { callDepth -= 1 }
+
         var frame: Environment = [:]
         frame.reserveCapacity(function.parameters.count)
         for (argument, parameter) in zip(arguments, function.parameters) {
             frame[parameter.name] = try evaluate(argument, in: environment)
         }
 
-        callDepth += 1
-        defer { callDepth -= 1 }
         return try evaluate(function.body, in: frame)
     }
 }
