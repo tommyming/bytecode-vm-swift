@@ -20,6 +20,7 @@ class VirtualMachine {
         instPtr = 0
         stack = []
         callFrames = []
+        callDepth = 0
 
         while isRunning && instPtr < byteCode.count {
             let rawOpcode = byteCode[instPtr]
@@ -155,9 +156,5 @@ class VirtualMachine {
             print("\(result)")
         }
         return stack.last
-    }
-
-    private func runtimeError(_ message: String) {
-        print("runtime error: \(message)")
     }
 }

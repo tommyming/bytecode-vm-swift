@@ -12,7 +12,6 @@ final class Interpreter {
         case unknownFunction(String)
         case wrongArgumentCount(function: String, expected: Int, got: Int)
         case divisionByZero
-        case unsupportedOperator(OptCode)
         case callDepthExceeded(Int)
 
         var description: String {
@@ -25,8 +24,6 @@ final class Interpreter {
                 return "'\(function)' expects \(expected) arguments, got \(got)"
             case .divisionByZero:
                 return "Division by 0 error."
-            case .unsupportedOperator(let op):
-                return "Unsupported operator '\(op)'"
             case .callDepthExceeded(let limit):
                 return "Call depth exceeded \(limit) nested calls"
             }
@@ -77,30 +74,18 @@ final class Interpreter {
 
         case .unary(let op, let expression):
             let value = try evaluate(expression, in: environment)
-            switch op {
-            case .minus:
-                // The compiler lowers this to `pushi 0; expr; minus`,
-                // i.e. 0 - value, so keep the same arithmetic here.
-                return 0 - value
-            case .add:
-                return value
-            default:
-                throw RuntimeError.unsupportedOperator(op)
-            }
+            // The compiler lowers unary minus to `pushi 0; expr; minus`, i.e. 0 - value.
+            return op == .minus ? 0 - value : value
 
         case .binary(let op, let left, let right):
             let lhs = try evaluate(left, in: environment)
             let rhs = try evaluate(right, in: environment)
-            switch op {
-            case .add: return lhs + rhs
-            case .minus: return lhs - rhs
-            case .multiply: return lhs * rhs
-            case .divide:
-                guard rhs != 0 else { throw RuntimeError.divisionByZero }
-                return lhs / rhs
-            default:
-                throw RuntimeError.unsupportedOperator(op)
-            }
+            // The type checker only allows arithmetic operators in these nodes.
+            if op == .add { return lhs + rhs }
+            if op == .minus { return lhs - rhs }
+            if op == .multiply { return lhs * rhs }
+            guard rhs != 0 else { throw RuntimeError.divisionByZero }
+            return lhs / rhs
         }
     }
 

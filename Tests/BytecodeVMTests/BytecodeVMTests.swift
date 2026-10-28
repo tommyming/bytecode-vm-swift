@@ -9,6 +9,12 @@ final class BytecodeVMTests: XCTestCase {
         XCTAssertEqual(result, 5)
     }
 
+    func testLexerHandlesDigitsInNamesAndSkipsUnknownCharacters() {
+        let tokens = Lexer(source: "f1 @").scanTokens()
+        XCTAssertEqual(tokens.count, 2) // identifier + eof; '@' is reported and skipped
+        XCTAssertEqual(tokens.first?.type, .identifier("f1"))
+    }
+
     func testVMStopsRunawayRecursionAtDepthLimit() {
         // main: pushi 0; call -> 7 (1 arg)
         // f:     loadLocal 0; call -> 7 (1 arg); halt
