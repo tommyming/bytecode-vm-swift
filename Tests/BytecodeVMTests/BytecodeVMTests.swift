@@ -14,6 +14,48 @@ final class BytecodeVMTests: XCTestCase {
         XCTAssertEqual(runSource(source), .string("tommyhan"))
     }
 
+    func testSourceSupportsMixedTypeAddition() {
+        let declarations = """
+            fun prepend(a: int, b: string) -> string {
+                a + b
+            }
+            fun append(a: string, b: int) -> string {
+                a + b
+            }
+            """
+        let cases: [(String, ExprValue)] = [
+            (#"prepend(42, "x")"#, .string("42x")),
+            (#"append("x", -42)"#, .string("x-42")),
+            (#"append(prepend(1, "x"), 2) + append("y", 3)"#, .string("1x2y3")),
+            (#"-65536 + "世界🙂""#, .string("-65536世界🙂")),
+            (#""世界🙂" + 65536"#, .string("世界🙂65536")),
+            (#"0 + """#, .string("0")),
+            (#""" + 0"#, .string("0")),
+            (#"1 + 2 + "x""#, .string("3x")),
+            (#""x" + 1 + 2"#, .string("x12")),
+            (#""x" + (1 + 2)"#, .string("x3")),
+            (#""x" + 2 * 3"#, .string("x6")),
+            ("1 + 2", .integer(3))
+        ]
+        for (expression, expected) in cases {
+            let source = declarations + "\n" + expression
+            XCTAssertEqual(interpretSource(source), expected, expression)
+            XCTAssertEqual(runSource(source), expected, expression)
+        }
+    }
+
+    func testVMAddsMixedAndMatchingOperandTypes() {
+        let cases: [([UInt8], ExprValue)] = [
+            ([0x01, 42, 0x05, 1, 0, 0, 0, 0x78, 0x02, 0], .string("42x")),
+            ([0x05, 1, 0, 0, 0, 0x78, 0x01, 42, 0x02, 0], .string("x42")),
+            ([0x01, 20, 0x01, 22, 0x02, 0], .integer(42)),
+            ([0x05, 1, 0, 0, 0, 0x78, 0x05, 1, 0, 0, 0, 0x79, 0x02, 0], .string("xy"))
+        ]
+        for (code, expected) in cases {
+            XCTAssertEqual(runBytecode(code), expected)
+        }
+    }
+
     func testSourcePreservesStringContents() {
         let cases: [(String, String)] = [
             ("\"\" + \"\"", ""),
@@ -55,7 +97,7 @@ final class BytecodeVMTests: XCTestCase {
     }
 
     func testVMRejectsStringArithmetic() {
-        for opcode: UInt8 in [0x02, 0x03, 0x06, 0x07] {
+        for opcode: UInt8 in [0x03, 0x06, 0x07] {
             XCTAssertNil(runBytecode([0x05, 0, 0, 0, 0, 0x01, 1, opcode, 0]))
         }
     }

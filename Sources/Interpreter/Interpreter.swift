@@ -81,13 +81,18 @@ final class Interpreter {
         case .binary(let op, let left, let right):
             let lhs = try evaluate(left, in: environment)
             let rhs = try evaluate(right, in: environment)
-            if op == .add, case .string(let lhsValue) = lhs, case .string(let rhsValue) = rhs {
-                return .string(lhsValue + rhsValue)
+            if op == .add {
+                switch (lhs, rhs) {
+                case (.integer(let lhsValue), .integer(let rhsValue)):
+                    return .integer(lhsValue + rhsValue)
+                default:
+                    return .string(lhs.description + rhs.description)
+                }
             }
             guard case let .integer(lhsValue) = lhs, case let .integer(rhsValue) = rhs else {
                 fatalError("Type checker should prevent non-integer arithmetic")
             }
-            if op == .add { return .integer(lhsValue + rhsValue) }
+
             if op == .minus { return .integer(lhsValue - rhsValue) }
             if op == .multiply { return .integer(lhsValue * rhsValue) }
             guard rhsValue != 0 else { throw RuntimeError.divisionByZero }

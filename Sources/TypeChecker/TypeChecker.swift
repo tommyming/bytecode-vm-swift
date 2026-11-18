@@ -87,10 +87,7 @@ struct TypeChecker {
                 guard let leftType = check(left), let rightType = check(right) else {
                     fatalError("Type Error: Addition operands must produce a value")
                 }
-                guard leftType == rightType else {
-                    fatalError("Type Error: Addition operands must both be 'int' or both be 'string'")
-                }
-                return leftType
+                return leftType == .string || rightType == .string ? .string : .int
             }
             requireInt(left, context: "Left operand")
             requireInt(right, context: "Right operand")

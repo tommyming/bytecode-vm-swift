@@ -85,11 +85,8 @@ class VirtualMachine {
                 switch (a, b) {
                 case (.integer(let a), .integer(let b)):
                     stack.append(.integer(a + b))
-                case (.string(let a), .string(let b)):
-                    stack.append(.string(a + b))
                 default:
-                    print("Runtime Error: ADD requires two integers or two strings")
-                    return nil
+                    stack.append(.string(a.description + b.description))
                 }
             case .minus:
                 guard stack.count >= 2 else {
