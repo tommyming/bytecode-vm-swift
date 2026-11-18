@@ -32,7 +32,7 @@ final class Interpreter {
 
     /// Bindings visible inside one active function call. The language has no
     /// assignments or nested scopes yet, so parameters are all a frame holds.
-    private typealias Environment = [String: Int]
+    private typealias Environment = [String: ExprValue]
 
     private var functions: [String: FunctionDecl] = [:]
     private var callDepth = 0
@@ -47,7 +47,7 @@ final class Interpreter {
     }
 
     /// Runs a program and returns the value of its main expression.
-    func run(_ program: Program) throws -> Int {
+    func run(_ program: Program) throws -> ExprValue {
         for function in program.functions {
             functions[function.name] = function
         }
@@ -57,12 +57,12 @@ final class Interpreter {
     }
 
     // MARK: - Evaluation
-
-    private func evaluate(_ expression: Expr, in environment: Environment) throws -> Int {
+    private func evaluate(_ expression: Expr, in environment: Environment) throws -> ExprValue {
         switch expression {
         case .number(let value):
-            return value
-
+            return .integer(value)
+        case let .string(value):
+            return .string(value)
         case .variable(let name):
             guard let value = environment[name] else {
                 throw RuntimeError.unknownVariable(name)
@@ -73,26 +73,39 @@ final class Interpreter {
             return try call(name, arguments: arguments, in: environment)
 
         case .unary(let op, let expression):
-            let value = try evaluate(expression, in: environment)
-            // The compiler lowers unary minus to `pushi 0; expr; minus`, i.e. 0 - value.
-            return op == .minus ? 0 - value : value
+            guard case .integer(let value) = try evaluate(expression, in: environment) else {
+                fatalError("Type checker should prevent non-integer arithmetic")
+            }
+            return op == .minus ? .integer(0 - value) : .integer(value)
 
         case .binary(let op, let left, let right):
             let lhs = try evaluate(left, in: environment)
             let rhs = try evaluate(right, in: environment)
-            // The type checker only allows arithmetic operators in these nodes.
-            if op == .add { return lhs + rhs }
-            if op == .minus { return lhs - rhs }
-            if op == .multiply { return lhs * rhs }
-            guard rhs != 0 else { throw RuntimeError.divisionByZero }
-            return lhs / rhs
+            if op == .add, case .string(let lhsValue) = lhs, case .string(let rhsValue) = rhs {
+                return .string(lhsValue + rhsValue)
+            }
+            guard case let .integer(lhsValue) = lhs, case let .integer(rhsValue) = rhs else {
+                fatalError("Type checker should prevent non-integer arithmetic")
+            }
+            if op == .add { return .integer(lhsValue + rhsValue) }
+            if op == .minus { return .integer(lhsValue - rhsValue) }
+            if op == .multiply { return .integer(lhsValue * rhsValue) }
+            guard rhsValue != 0 else { throw RuntimeError.divisionByZero }
+            return .integer(lhsValue / rhsValue)
         }
     }
 
     /// Mirrors the VM's CALL/RETURN pair: arguments are evaluated in the
     /// caller's environment left to right, bound to the callee's parameters,
     /// and the body's value becomes the call's result.
-    private func call(_ name: String, arguments: [Expr], in environment: Environment) throws -> Int {
+    private func call(_ name: String, arguments: [Expr], in environment: Environment) throws -> ExprValue {
+        if name == "string" {
+            guard arguments.count == 1 else {
+                throw RuntimeError.wrongArgumentCount(function: name, expected: 1, got: arguments.count)
+            }
+            let value = try evaluate(arguments[0], in: environment)
+            return .string(value.description)
+        }
         guard let function = functions[name] else {
             throw RuntimeError.unknownFunction(name)
         }

@@ -18,13 +18,13 @@ public func compileSource(_ source: String, printAST: Bool = false) -> [UInt8] {
     return compiler.compile(program)
 }
 
-public func runSource(_ source: String, printAST: Bool = false) -> Int? {
+public func runSource(_ source: String, printAST: Bool = false) -> ExprValue? {
     runBytecode(compileSource(source, printAST: printAST))
 }
 
 /// Interprets source text directly on the AST, skipping the compiler and the
 /// bytecode VM entirely.
-public func interpretSource(_ source: String, printAST: Bool = false) -> Int? {
+public func interpretSource(_ source: String, printAST: Bool = false) -> ExprValue? {
     let program = parseAndTypeCheck(source, printAST: printAST)
     do {
         let result = try Interpreter().run(program)
@@ -38,7 +38,7 @@ public func interpretSource(_ source: String, printAST: Bool = false) -> Int? {
 
 /// Executes already-compiled bytecode directly, skipping the lexer, parser,
 /// type checker, and compiler.
-public func runBytecode(_ code: [UInt8]) -> Int? {
+public func runBytecode(_ code: [UInt8]) -> ExprValue? {
     let vm = VirtualMachine()
     vm.byteCode = code
     return vm.run()

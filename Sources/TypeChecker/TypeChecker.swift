@@ -46,12 +46,23 @@ struct TypeChecker {
         switch expression {
         case .number:
             return .int
+        case .string:
+            return .string
         case .variable(let name):
             guard let type = parameterTypes[name] else {
                 fatalError("Type Error: Unknown variable '\(name)'")
             }
             return type
         case .call(let name, let arguments):
+            if name == "string" {
+                guard arguments.count == 1 else {
+                    fatalError("Type Error: 'string' expects exactly one argument")
+                }
+                guard check(arguments[0]) != nil else {
+                    fatalError("Type Error: Argument of 'string' must produce a value")
+                }
+                return .string
+            }
             guard let signature = signatures[name] else {
                 fatalError("Type Error: Unknown function '\(name)'")
             }
@@ -71,7 +82,16 @@ struct TypeChecker {
         case .unary(_, let expr):
             requireInt(expr, context: "Unary operand")
             return .int
-        case .binary(_, let left, let right):
+        case .binary(let op, let left, let right):
+            if op == .add {
+                guard let leftType = check(left), let rightType = check(right) else {
+                    fatalError("Type Error: Addition operands must produce a value")
+                }
+                guard leftType == rightType else {
+                    fatalError("Type Error: Addition operands must both be 'int' or both be 'string'")
+                }
+                return leftType
+            }
             requireInt(left, context: "Left operand")
             requireInt(right, context: "Right operand")
             return .int

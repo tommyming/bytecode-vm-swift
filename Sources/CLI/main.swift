@@ -136,10 +136,10 @@ func runSourceFile(at path: String, useInterpreter: Bool) {
         fail("'\(path)' is empty; expected a program with a main expression.")
     }
 
-    let result = useInterpreter
-        ? interpretSource(fileSource, printAST: true)
-        : runSource(fileSource, printAST: true)
-    guard result != nil else {
+    let succeeded = useInterpreter
+        ? interpretSource(fileSource, printAST: true) != nil
+        : runSource(fileSource, printAST: true) != nil
+    guard succeeded else {
         exit(1)
     }
     exit(0)

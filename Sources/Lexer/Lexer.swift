@@ -34,6 +34,8 @@ class Lexer {
                 readIdentifier()
             } else if char.isNumber {
                 readNumber()
+            } else if char == "\"" {
+                readString()
             } else if char == "+" {
                 tokens.append(Token(type: .instruction(.add), line: line))
                 current = source.index(after: current)
@@ -112,9 +114,26 @@ class Lexer {
             tokens.append(Token(type: .funKeyword, line: line))
         } else if word == "int" {
             tokens.append(Token(type: .type(.int), line: line))
+        } else if word == "string" {
+            tokens.append(Token(type: .type(.string), line: line))
         } else {
             tokens.append(Token(type: .identifier(word), line: line))
         }
+    }
+
+    private func readString() {
+        let startLine = line
+        current = source.index(after: current)
+        let start = current
+        while current < source.endIndex && source[current] != "\"" {
+            if source[current] == "\n" { line += 1 }
+            current = source.index(after: current)
+        }
+        guard current < source.endIndex else {
+            fatalError("Lexer Error: Unterminated string on line \(startLine)")
+        }
+        tokens.append(Token(type: .string(String(source[start..<current])), line: startLine))
+        current = source.index(after: current)
     }
 
     private func readNumber() {

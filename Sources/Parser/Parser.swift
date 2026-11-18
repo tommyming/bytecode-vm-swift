@@ -27,7 +27,7 @@ class Parser {
         if !check(.rparen) {
             repeat {
                 let parameterName = consumeIdentifier("Expected a parameter name")
-                // An unannotated parameter defaults to 'int', the only supported type.
+                // An unannotated parameter defaults to 'int'.
                 let parameterType = match(.colon) ? consumeType("Expected a parameter type after ':'") : .int
                 parameters.append(Parameter(name: parameterName, type: parameterType))
             } while match(.comma)
@@ -96,7 +96,7 @@ class Parser {
         return factor()
     }
 
-    // factor -> integer | identifier | call | "(" expression ")"
+    // factor -> integer | string | identifier | call | "(" expression ")"
     private func factor() -> Expr {
         if match(.lparen) {
             let expr = expression()
@@ -110,6 +110,16 @@ class Parser {
             if case .integer(let value) = previous().type {
                 return .number(value)
             }
+        }
+        if case .string(let value) = peek().type {
+            _ = advance()
+            return .string(value)
+        }
+        if match(.type(.string)) {
+            consume(.lparen, "Expected '(' after 'string'")
+            let argument = expression()
+            consume(.rparen, "Expected ')' after the single argument to 'string'")
+            return .call(name: "string", arguments: [argument])
         }
         if case .identifier(let name) = peek().type {
             _ = advance()

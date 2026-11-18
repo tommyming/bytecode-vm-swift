@@ -7,9 +7,11 @@ enum OptCode: UInt8 {
     case add = 0x02
     case minus = 0x03
     case print = 0x04
+    case pushs = 0x05
     case multiply = 0x06
     case divide = 0x07
     case loadLocal = 0x08
     case call = 0x09
     case returnValue = 0x0A
+    case toString = 0x0B
 }

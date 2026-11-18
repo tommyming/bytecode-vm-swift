@@ -3,6 +3,7 @@
 enum TokenType: Equatable {
     case instruction(OptCode)
     case integer(Int)
+    case string(String)
     case identifier(String)
     case funKeyword
     case type(ValueType)

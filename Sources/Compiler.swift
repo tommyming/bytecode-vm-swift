@@ -46,6 +46,8 @@ struct Compiler {
         switch expression {
         case .number(let value):
             emitNumber(value)
+        case .string(let value):
+            emitString(value)
         case .variable(let name):
             guard let index = parameters[name] else {
                 fatalError("Compiler Error: Unknown variable '\(name)'")
@@ -54,6 +56,10 @@ struct Compiler {
         case .call(let name, let arguments):
             for argument in arguments {
                 emit(argument, parameters: parameters)
+            }
+            if name == "string" {
+                bytecode.append(OptCode.toString.rawValue)
+                return
             }
             bytecode.append(OptCode.call.rawValue)
             let addressIndex = bytecode.count
@@ -98,5 +104,16 @@ struct Compiler {
             bytecode.append(UInt8(byte))
             bytecode.append(OptCode.add.rawValue)
         }
+    }
+
+    private mutating func emitString(_ value: String) {
+        let bytes = Array(value.utf8)
+        let length = UInt32(bytes.count)
+        bytecode.append(OptCode.pushs.rawValue)
+        bytecode.append(UInt8(truncatingIfNeeded: length))
+        bytecode.append(UInt8(truncatingIfNeeded: length >> 8))
+        bytecode.append(UInt8(truncatingIfNeeded: length >> 16))
+        bytecode.append(UInt8(truncatingIfNeeded: length >> 24))
+        bytecode.append(contentsOf: bytes)
     }
 }

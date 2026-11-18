@@ -2,6 +2,7 @@
 
 indirect enum Expr {
     case number(Int)
+    case string(String)
     case variable(String)
     case call(name: String, arguments: [Expr])
     case unary(op: OptCode, expr: Expr)
@@ -21,6 +22,9 @@ indirect enum Expr {
         switch self {
         case .number(let value):
             print("\(prefix)\(connector)Number(\(value))")
+
+        case let .string(value):
+            print("\(prefix)\(connector)String(\(value))")
 
         case .variable(let name):
             print("\(prefix)\(connector)Variable(\(name))")

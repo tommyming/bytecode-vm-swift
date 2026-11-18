@@ -1,5 +1,7 @@
 // Tommy Han, 2026
 
+import Foundation
+
 class VirtualMachine {
     private struct CallFrame {
         let returnAddress: Int
@@ -8,14 +10,14 @@ class VirtualMachine {
 
     var byteCode: [UInt8] = []
     private var instPtr = 0
-    private var stack: [Int] = []
+    private var stack: [ExprValue] = []
     private var callFrames: [CallFrame] = []
     private var callDepth = 0
     private let maxCallDepth = 10_000
     private var isRunning = false
 
     @discardableResult
-    func run() -> Int? {
+    func run() -> ExprValue? {
         isRunning = true
         instPtr = 0
         stack = []
@@ -43,7 +45,35 @@ class VirtualMachine {
                 }
                 let value = Int(byteCode[instPtr])
                 instPtr += 1
-                stack.append(value)
+                stack.append(.integer(value))
+
+            case .pushs:
+                guard instPtr + 4 <= byteCode.count else {
+                    print("Runtime Error: Truncated bytecode: PUSHS is missing its string length")
+                    return nil
+                }
+                let length = Int(byteCode[instPtr])
+                    | Int(byteCode[instPtr + 1]) << 8
+                    | Int(byteCode[instPtr + 2]) << 16
+                    | Int(byteCode[instPtr + 3]) << 24
+                instPtr += 4
+                guard instPtr + length <= byteCode.count else {
+                    print("Runtime Error: Truncated bytecode: PUSHS is missing string data")
+                    return nil
+                }
+                guard let value = String(bytes: byteCode[instPtr..<(instPtr + length)], encoding: .utf8) else {
+                    print("Runtime Error: PUSHS contains invalid UTF-8")
+                    return nil
+                }
+                instPtr += length
+                stack.append(.string(value))
+
+            case .toString:
+                guard let value = stack.popLast() else {
+                    print("Runtime Error: Stack underflow on TO_STRING")
+                    return nil
+                }
+                stack.append(.string(value.description))
 
             case .add:
                 guard stack.count >= 2 else {
@@ -52,15 +82,26 @@ class VirtualMachine {
                 }
                 let b = stack.removeLast()
                 let a = stack.removeLast()
-                stack.append(a + b)
+                switch (a, b) {
+                case (.integer(let a), .integer(let b)):
+                    stack.append(.integer(a + b))
+                case (.string(let a), .string(let b)):
+                    stack.append(.string(a + b))
+                default:
+                    print("Runtime Error: ADD requires two integers or two strings")
+                    return nil
+                }
             case .minus:
                 guard stack.count >= 2 else {
                     print("Runtime Error: Stack underflow on MINUS")
                     return nil
                 }
-                let b = stack.removeLast()
-                let a = stack.removeLast()
-                stack.append(a - b)
+                guard case .integer(let b) = stack.removeLast(),
+                      case .integer(let a) = stack.removeLast() else {
+                    print("Runtime Error: MINUS requires integer operands")
+                    return nil
+                }
+                stack.append(.integer(a - b))
             case .print:
                 guard let value = stack.popLast() else {
                     print("Runtime Error: Stack underflow on PRINT")
@@ -72,23 +113,29 @@ class VirtualMachine {
                     print("Runtime Error: Stack underflow on MULTIPLY")
                     return nil
                 }
-                let b = stack.removeLast()
-                let a = stack.removeLast()
-                stack.append(a * b)
+                guard case .integer(let b) = stack.removeLast(),
+                      case .integer(let a) = stack.removeLast() else {
+                    print("Runtime Error: MULTIPLY requires integer operands")
+                    return nil
+                }
+                stack.append(.integer(a * b))
             case .divide:
                 guard stack.count >= 2 else {
                     print("Runtime Error: Stack underflow on DIVIDE")
                     return nil
                 }
-                let b = stack.removeLast()
-                let a = stack.removeLast()
+                guard case .integer(let b) = stack.removeLast(),
+                      case .integer(let a) = stack.removeLast() else {
+                    print("Runtime Error: DIVIDE requires integer operands")
+                    return nil
+                }
 
                 guard b != 0 else {
                     print("Runtime Error: Division by 0 error.")
                     return nil
                 }
 
-                stack.append(a / b)
+                stack.append(.integer(a / b))
 
             case .loadLocal:
                 guard instPtr < byteCode.count else {
